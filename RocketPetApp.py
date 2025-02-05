@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*- ~
 
 import os
+from re import DEBUG
 import sys
 import math
 import time
@@ -19,9 +20,12 @@ os.chdir(script_dir)
 print("Current directory:", os.getcwd())
 
 
-class Constants:
-    """Application-wide configuration constants"""
+class Configs:
+    """Application-wide configuration"""
     
+    class App:
+        USER_RESOURCE_MONITOR = True
+
     class Window:
         BG_COLOR = 'darkblue'
         TRANSPARENT_COLOR = 'darkblue'
@@ -61,11 +65,11 @@ class WindowManager:
     def _setup_window(self) -> None:
         """Configure window attributes and geometry"""
         try:
-            self.root.config(bg=Constants.Window.BG_COLOR)
-            self.root.attributes('-transparentcolor', Constants.Window.TRANSPARENT_COLOR)
-            self.root.attributes('-topmost', Constants.Window.TOPMOST)
-            self.root.attributes('-fullscreen', Constants.Window.FULLSCREEN)
-            self.root.overrideredirect(Constants.Window.OVERRIDE_REDIRECT)
+            self.root.config(bg=Configs.Window.BG_COLOR)
+            self.root.attributes('-transparentcolor', Configs.Window.TRANSPARENT_COLOR)
+            self.root.attributes('-topmost', Configs.Window.TOPMOST)
+            self.root.attributes('-fullscreen', Configs.Window.FULLSCREEN)
+            self.root.overrideredirect(Configs.Window.OVERRIDE_REDIRECT)
         except tk.TclError as e:
             sys.exit(f"Failed to initialize window: {e}")
 
@@ -85,14 +89,14 @@ class ImageManager:
     def _load_base_image(self) -> Image.Image:
         """Load and preprocess the base rocket image"""
         try:
-            original_img = Image.open(Constants.Image.PATH)
+            original_img = Image.open(Configs.Image.PATH)
             return original_img.rotate(
-                Constants.Image.ROTATION_OFFSET,
-                resample=Constants.Image.RESAMPLE_METHOD,
+                Configs.Image.ROTATION_OFFSET,
+                resample=Configs.Image.RESAMPLE_METHOD,
                 expand=True
-            ).resize(Constants.Image.SIZE)
+            ).resize(Configs.Image.SIZE)
         except FileNotFoundError:
-            sys.exit(f"Error: Image file '{Constants.Image.PATH}' not found")
+            sys.exit(f"Error: Image file '{Configs.Image.PATH}' not found")
         except Exception as e:
             sys.exit(f"Error loading image: {str(e)}")
 
@@ -101,7 +105,7 @@ class ImageManager:
         return ImageTk.PhotoImage(
             self.base_image.rotate(
                 angle,
-                resample=Constants.Image.RESAMPLE_METHOD,
+                resample=Configs.Image.RESAMPLE_METHOD,
                 expand=True
             )
         )
@@ -123,7 +127,7 @@ class Rocket:
         # Setup UI components
         self.label = tk.Label(
             self.window.get_root(),
-            bg=Constants.RocketPhysics.LABEL_BG_COLOR,
+            bg=Configs.RocketPhysics.LABEL_BG_COLOR,
             bd=0
         )
         self.label.place(x=self.x, y=self.y, anchor=tk.CENTER)
@@ -148,23 +152,23 @@ class Rocket:
             
         target_angle = math.degrees(math.atan2(-dy, dx))
         angle_diff = (target_angle - self.angle + 180) % 360 - 180
-        self.angle += angle_diff * Constants.RocketPhysics.STEERING_SENSITIVITY
+        self.angle += angle_diff * Configs.RocketPhysics.STEERING_SENSITIVITY
 
     def _update_speed(self, dx: float, dy: float) -> None:
         """Adjust rocket's speed based on distance to target"""
         distance = math.hypot(dx, dy)
-        if distance > Constants.RocketPhysics.DECELERATION_DISTANCE:
+        if distance > Configs.RocketPhysics.DECELERATION_DISTANCE:
             self.speed = min(
-                self.speed + Constants.RocketPhysics.ACCELERATION,
-                Constants.RocketPhysics.MAX_SPEED
+                self.speed + Configs.RocketPhysics.ACCELERATION,
+                Configs.RocketPhysics.MAX_SPEED
             )
         else:
-            self.speed *= Constants.RocketPhysics.DRAG_FACTOR
+            self.speed *= Configs.RocketPhysics.DRAG_FACTOR
 
     def _update_position(self, dx: float, dy: float) -> None:
         """Update rocket's position based on current speed and angle"""
         distance = math.hypot(dx, dy)
-        if distance > Constants.RocketPhysics.FOLLOW_THRESHOLD:
+        if distance > Configs.RocketPhysics.FOLLOW_THRESHOLD:
             angle_rad = math.radians(self.angle)
             self.x += math.cos(angle_rad) * self.speed
             self.y -= math.sin(angle_rad) * self.speed
@@ -202,7 +206,7 @@ class ResourceMonitor:
             cpu_percent = self.process.cpu_percent(interval=1)
             num_cores = os.cpu_count() or 1
             print(f"Memory: {memory:.2f} MB | CPU: {cpu_percent/num_cores:.2f}%")
-            time.sleep(Constants.ResourceMonitor.MONITOR_INTERVAL_SEC)
+            time.sleep(Configs.ResourceMonitor.MONITOR_INTERVAL_SEC)
 
 
 class RocketApp:
@@ -212,7 +216,9 @@ class RocketApp:
         self.window_manager = WindowManager()
         self.image_manager = ImageManager()
         self.rocket: Optional[Rocket] = None
-        self.resource_monitor = ResourceMonitor()
+        self.resource_monitor = None
+        if Configs.App.USER_RESOURCE_MONITOR:
+            self.resource_monitor = ResourceMonitor()
         self._setup_signal_handling()
         self._initialize_rocket()
 
@@ -229,7 +235,8 @@ class RocketApp:
     def _signal_handler(self, sig: int, frame: Optional[types.FrameType]) -> None:
         """Handle shutdown signals"""
         print("\nInitiating graceful shutdown...")
-        self.resource_monitor.stop()
+        if self.resource_monitor:
+            self.resource_monitor.stop()
         self.window_manager.get_root().destroy()
         sys.exit(0)
 
@@ -242,21 +249,23 @@ class RocketApp:
             )
             self.rocket.update(target_pos)
             self.window_manager.get_root().after(
-                Constants.Animation.UPDATE_INTERVAL_MS,
+                Configs.Animation.UPDATE_INTERVAL_MS,
                 self._animate
             )
 
     def run(self) -> None:
         """Start application execution"""
         try:
-            self.resource_monitor.start()
+            if self.resource_monitor:
+                self.resource_monitor.start()
             self._animate()
             self.window_manager.start_main_loop()
         except Exception as e:
             print(f"Critical error: {str(e)}")
             traceback.print_exc()
         finally:
-            self.resource_monitor.stop()
+            if self.resource_monitor:
+                self.resource_monitor.stop()
 
 
 if __name__ == "__main__":
