@@ -38,4 +38,6 @@ auto-py-to-exe
 
 # remark
 added below to RocketPetApp.py to prevent run exe error
+```python
 # -*- coding: utf-8 -*- ~
+```
