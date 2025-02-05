@@ -7,10 +7,14 @@
 </div>
 
 # setup
+```
 pip install Pillow psutil
+```
 
 # run
+```
 python RocketPetApp.py
+```
 
 # play with the demo
 just click the exe file (only for win os)
@@ -18,8 +22,13 @@ just click the exe file (only for win os)
 # build
 set USER_RESOURCE_MONITOR = False to save resources
 
+use auto-py-to-exe to build the exe
+```
 pip install auto-py-to-exe
+```
+```
 auto-py-to-exe
+```
 
 - Script Location
   - select RocketPetApp.py script
@@ -40,7 +49,9 @@ auto-py-to-exe
   - press convert button
 
 # Current Command
+```
 pyinstaller --noconfirm --onefile --windowed --icon "D:\zzzbluecode\RocketPetApp\rocket_ai.ico" --add-data "D:\zzzbluecode\RocketPetApp\rocket_ai.png;."  "D:\zzzbluecode\RocketPetApp\RocketPetApp.py"
+```
 
 # remark
 ## the exe start slow at the first time
@@ -55,7 +66,11 @@ added below to RocketPetApp.py to prevent run exe error
 
 ## to refresh the ico in taskbar for win os 
 https://superuser.com/questions/499078/refresh-icon-cache-without-rebooting
-for win10: ie4uinit.exe -show
+
+for win10: 
+```
+ie4uinit.exe -show
+```
 
 # tools
 ## assist in code generation and optimization
